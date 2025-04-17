@@ -7,15 +7,19 @@ Module.register('MMM-Sonos', {
         showMetadata: true,
         listenWithPolling: false,
         pollingTimeout: 5000,
+        debug: false
     },
 
     items: {},
 
     start: function () {
-        Log.log('Sonos frontend started');
+        this.debug = this.config.debug === true;
+        if (this.debug) Log.log('Sonos frontend started');
+
         this.sendSocketNotification('SONOS_START', {
             listenWithPolling: this.config.listenWithPolling,
-            pollingTime: this.config.pollingTimeout ?? 5000
+            pollingTime: this.config.pollingTimeout ?? 5000,
+            debug: this.debug
         });
     },
 
@@ -28,7 +32,7 @@ Module.register('MMM-Sonos', {
     },
 
     socketNotificationReceived: function (id, payload) {
-        Log.log(`Notification received: ${id}`, payload);
+        if (this.debug) Log.log(`Notification received: ${id}`, payload);
 
         switch (id) {
             case 'SET_SONOS_GROUPS':
@@ -42,7 +46,9 @@ Module.register('MMM-Sonos', {
                         group: payload.group,
                         track: payload.track,
                     };
-					Log.log('Received Sonos track data:', JSON.stringify(payload.track, null, 2));
+                    if (this.debug) {
+                        Log.log('Received Sonos track data:', payload.track);
+                    }
                     this.updateDom(this.config.animationSpeed);
                 }
                 break;
@@ -77,7 +83,7 @@ Module.register('MMM-Sonos', {
                 }
                 break;
             default:
-                Log.info(`Notification with ID "${id}" unsupported. Ignoring...`);
+                if (this.debug) Log.info(`Notification with ID "${id}" unsupported. Ignoring...`);
                 break;
         }
     },
@@ -98,67 +104,66 @@ Module.register('MMM-Sonos', {
         container.append(...Object.values(this.items)
             .filter(item => item.state === 'playing' && item.track)
             .map(item => {
-				const wrapper = document.createElement('div');
-				wrapper.className = 'sonos-row';
-			
-				// Album Art
-				if (item.track.albumArtURI) {
-					const art = document.createElement('img');
-					art.src = item.track.albumArtURI;
-					art.className = 'album-art';
-					wrapper.appendChild(art);
-				}
-			
-				// Text Container
-				const textWrapper = document.createElement('div');
-				textWrapper.className = 'sonos-text';
-			
-				const track = document.createElement('div');
-				track.className = 'track';
-				track.innerHTML = `<strong class="bright ticker">${item.track.title}</strong>`;
-				textWrapper.appendChild(track);
-			
-				const artist = [];
-				if (this.config.showArtist && item.track.artist) {
-					artist.push(`<span class="bright">${item.track.artist}</span>`);
-				}
-				if (this.config.showAlbum && item.track.album) {
-					artist.push(`${item.track.album}`);
-				}
-				if (artist.length > 0) {
-					const artistElement = document.createElement('div');
-					artistElement.className = 'artist small ticker';
-					artistElement.innerHTML = artist.join('&nbsp;○&nbsp;');
-					textWrapper.appendChild(artistElement);
-				}
-			
-				if (this.config.showMetadata) {
-					let volume;
-					if (item.isMuted === true) {
-						volume = `${this.getIcon('volume-x', 'dimmed')}`;
-					} else {
-						volume = `${this.getIcon(item.volume < 50 ? 'volume-1' : 'volume-2', 'dimmed')}&nbsp;<span>${item.volume}</span>`;
-					}
-			
-					const groupName = this.config.showFullGroupName
-						? item.group.ZoneGroupMember.map(member => member.ZoneName).join(' + ')
-						: item.group.Name;
-			
-					const metadata = document.createElement('div');
-					metadata.className = 'metadata small normal';
-					metadata.innerHTML =
-						`<span>${this.getIcon('speaker', 'dimmed')}&nbsp;<span class="group-name ticker">${groupName}</span></span>` +
-						'&nbsp;' +
-						`<span>${volume}</span>` +
-						'&nbsp;' +
-						`<span>${this.getIcon('activity', 'dimmed')}&nbsp;<span>${Math.floor(item.track.duration / 60)}:${Math.ceil(item.track.duration % 60).toString().padStart(2, '0')}</span></span>`;
-					textWrapper.appendChild(metadata);
-				}
-			
-				wrapper.appendChild(textWrapper);
-				return wrapper;
-			}));
-			
+                const wrapper = document.createElement('div');
+                wrapper.className = 'sonos-row';
+
+                // Album Art
+                if (item.track.albumArtURI) {
+                    const art = document.createElement('img');
+                    art.src = item.track.albumArtURI;
+                    art.className = 'album-art';
+                    wrapper.appendChild(art);
+                }
+
+                // Text Container
+                const textWrapper = document.createElement('div');
+                textWrapper.className = 'sonos-text';
+
+                const track = document.createElement('div');
+                track.className = 'track';
+                track.innerHTML = `<strong class="bright ticker">${item.track.title}</strong>`;
+                textWrapper.appendChild(track);
+
+                const artist = [];
+                if (this.config.showArtist && item.track.artist) {
+                    artist.push(`<span class="bright">${item.track.artist}</span>`);
+                }
+                if (this.config.showAlbum && item.track.album) {
+                    artist.push(`${item.track.album}`);
+                }
+                if (artist.length > 0) {
+                    const artistElement = document.createElement('div');
+                    artistElement.className = 'artist small ticker';
+                    artistElement.innerHTML = artist.join('&nbsp;○&nbsp;');
+                    textWrapper.appendChild(artistElement);
+                }
+
+                if (this.config.showMetadata) {
+                    let volume;
+                    if (item.isMuted === true) {
+                        volume = `${this.getIcon('volume-x', 'dimmed')}`;
+                    } else {
+                        volume = `${this.getIcon(item.volume < 50 ? 'volume-1' : 'volume-2', 'dimmed')}&nbsp;<span>${item.volume}</span>`;
+                    }
+
+                    const groupName = this.config.showFullGroupName
+                        ? item.group.ZoneGroupMember.map(member => member.ZoneName).join(' + ')
+                        : item.group.Name;
+
+                    const metadata = document.createElement('div');
+                    metadata.className = 'metadata small normal';
+                    metadata.innerHTML =
+                        `<span>${this.getIcon('speaker', 'dimmed')}&nbsp;<span class="group-name ticker">${groupName}</span></span>` +
+                        '&nbsp;' +
+                        `<span>${volume}</span>` +
+                        '&nbsp;' +
+                        `<span>${this.getIcon('activity', 'dimmed')}&nbsp;<span>${Math.floor(item.track.duration / 60)}:${Math.ceil(item.track.duration % 60).toString().padStart(2, '0')}</span></span>`;
+                    textWrapper.appendChild(metadata);
+                }
+
+                wrapper.appendChild(textWrapper);
+                return wrapper;
+            }));
 
         return container;
     },

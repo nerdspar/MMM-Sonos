@@ -39,6 +39,7 @@ then add the module to your MagicMirror's configuration. Here is an example:
                 showArtist: Boolean,
                 showAlbum: Boolean,
                 showMetadata: Boolean
+                debug: false
             }
         }
     ]
