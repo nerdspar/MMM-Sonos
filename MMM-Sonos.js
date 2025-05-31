@@ -105,6 +105,13 @@ Module.register('MMM-Sonos', {
             .filter(item => item.state === 'playing' && item.track)
             .map(item => {
                 const wrapper = document.createElement('div');
+                const isRecordPlayer = item.track.uri === "x-rincon-mp3radio://http://sonos.local:8000/rapi.mp3";
+                if (isRecordPlayer) {
+                    item.track.title = "Record Player";
+                    item.track.artist = "Vinyl";
+                    item.track.album = "Now Spinning";
+                    item.track.albumArtURI = "/modules/MMM-Sonos/record.png"; // You will need to place this image here
+                }
                 wrapper.className = 'sonos-row';
 
                 // Album Art
@@ -134,7 +141,7 @@ Module.register('MMM-Sonos', {
                 if (artist.length > 0) {
                     const artistElement = document.createElement('div');
                     artistElement.className = 'artist small ticker';
-                    artistElement.innerHTML = artist.join('&nbsp;○&nbsp;');
+                    artistElement.innerHTML = artist.join('&nbsp;â—‹&nbsp;');
                     textWrapper.appendChild(artistElement);
                 }
 
