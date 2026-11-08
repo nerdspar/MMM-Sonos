@@ -20,5 +20,8 @@
   "dependencies": {
     "feather-icons": "^4.24.1",
     "sonos": "^1.12.5"
+  },
+  "scripts": {
+    "test": "node --test"
   }
 }

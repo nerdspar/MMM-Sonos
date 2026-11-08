@@ -54,6 +54,16 @@ then add the module to your MagicMirror's configuration. Here is an example:
 | showFullGroupName | Whether or not to display all devices in the group. If false, the group name will be `<coordinator-name> +<number-other-devices>`, e.g. `Kitchen +2`. | `false` | No |
 | showArtist | Whether or not to display the artist name | `true` | No |
 | showAlbum | Whether or not to display the album name | `true` | No |
-| showMetadata | Whether or not to display the track metadata, i.e. room where it's played, length, volume | `true` | No |
+| showMetadata | Whether or not to display the track metadata, i.e. room where it's played, length, volume. The length is left out when there isn't one (TV, live streams) | `true` | No |
 | listenWithPolling | When the default events won't work with the sonos, it is possible to poll the data | `false` | No |
 | pollingTimeout | Polling timeout in millisecond, only workd when `listenWithPolling` is set to `true` | 5000 | No |
+
+### TV and tracks without artwork
+
+When a soundbar is playing its TV input, the row shows a **TV** tile in place of album art, with the room and volume but no track length. Tracks without artwork get a music-note tile the same size, so rows stay aligned.
+
+### Tests
+
+```sh
+npm test
+```

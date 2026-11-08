@@ -72,3 +72,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Stand-in for artwork (TV input, tracks without art): same size and shape as album art */
+.icon-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.icon-tile .feather {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.5;
+}

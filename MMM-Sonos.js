@@ -28,7 +28,10 @@ Module.register('MMM-Sonos', {
     },
 
     getScripts: function () {
-        return [this.file('node_modules/feather-icons/dist/feather.min.js')];
+        return [
+            this.file('node_modules/feather-icons/dist/feather.min.js'),
+            this.file('sonos-display.js')
+        ];
     },
 
     socketNotificationReceived: function (id, payload) {
@@ -103,76 +106,77 @@ Module.register('MMM-Sonos', {
         container.className = 'sonos light';
         container.append(...Object.values(this.items)
             .filter(item => item.state === 'playing' && item.track)
-            .map(item => {
-                const wrapper = document.createElement('div');
-                const isRecordPlayer = item.track.uri === "x-rincon-mp3radio://http://sonos.local:8000/rapi.mp3";
-                if (isRecordPlayer) {
-                    item.track.title = "Record Player";
-                    item.track.artist = "Vinyl";
-                    item.track.album = "Now Spinning";
-                    item.track.albumArtURI = "/modules/MMM-Sonos/record.png"; // You will need to place this image here
-                }
-                wrapper.className = 'sonos-row';
-
-                // Album Art
-                if (item.track.albumArtURI) {
-                    const art = document.createElement('img');
-                    art.src = item.track.albumArtURI;
-                    art.className = 'album-art';
-                    wrapper.appendChild(art);
-                }
-
-                // Text Container
-                const textWrapper = document.createElement('div');
-                textWrapper.className = 'sonos-text';
-
-                const track = document.createElement('div');
-                track.className = 'track';
-                track.innerHTML = `<strong class="bright ticker">${item.track.title}</strong>`;
-                textWrapper.appendChild(track);
-
-                const artist = [];
-                if (this.config.showArtist && item.track.artist) {
-                    artist.push(`<span class="bright">${item.track.artist}</span>`);
-                }
-                if (this.config.showAlbum && item.track.album) {
-                    artist.push(`${item.track.album}`);
-                }
-                if (artist.length > 0) {
-                    const artistElement = document.createElement('div');
-                    artistElement.className = 'artist small ticker';
-                    artistElement.innerHTML = artist.join('&nbsp;â—‹&nbsp;');
-                    textWrapper.appendChild(artistElement);
-                }
-
-                if (this.config.showMetadata) {
-                    let volume;
-                    if (item.isMuted === true) {
-                        volume = `${this.getIcon('volume-x', 'dimmed')}`;
-                    } else {
-                        volume = `${this.getIcon(item.volume < 50 ? 'volume-1' : 'volume-2', 'dimmed')}&nbsp;<span>${item.volume}</span>`;
-                    }
-
-                    const groupName = this.config.showFullGroupName
-                        ? item.group.ZoneGroupMember.map(member => member.ZoneName).join(' + ')
-                        : item.group.Name;
-
-                    const metadata = document.createElement('div');
-                    metadata.className = 'metadata small normal';
-                    metadata.innerHTML =
-                        `<span>${this.getIcon('speaker', 'dimmed')}&nbsp;<span class="group-name ticker">${groupName}</span></span>` +
-                        '&nbsp;' +
-                        `<span>${volume}</span>` +
-                        '&nbsp;' +
-                        `<span>${this.getIcon('activity', 'dimmed')}&nbsp;<span>${Math.floor(item.track.duration / 60)}:${Math.ceil(item.track.duration % 60).toString().padStart(2, '0')}</span></span>`;
-                    textWrapper.appendChild(metadata);
-                }
-
-                wrapper.appendChild(textWrapper);
-                return wrapper;
-            }));
+            .map(item => this.renderRow(item)));
 
         return container;
+    },
+
+    renderRow: function (item) {
+        const row = SonosDisplay.describe(item.track);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `sonos-row source-${row.source}`;
+
+        // Artwork, or an icon tile the same size so every row lines up
+        if (row.art) {
+            const art = document.createElement('img');
+            art.src = row.art;
+            art.className = 'album-art';
+            wrapper.appendChild(art);
+        } else {
+            const tile = document.createElement('div');
+            tile.className = 'album-art icon-tile';
+            tile.innerHTML = this.getIcon(row.icon, 'dimmed');
+            wrapper.appendChild(tile);
+        }
+
+        const textWrapper = document.createElement('div');
+        textWrapper.className = 'sonos-text';
+
+        const track = document.createElement('div');
+        track.className = 'track';
+        track.innerHTML = `<strong class="bright ticker">${row.title}</strong>`;
+        textWrapper.appendChild(track);
+
+        const artist = [];
+        if (this.config.showArtist && row.artist) {
+            artist.push(`<span class="bright">${row.artist}</span>`);
+        }
+        if (this.config.showAlbum && row.album) {
+            artist.push(row.album);
+        }
+        if (artist.length > 0) {
+            const artistElement = document.createElement('div');
+            artistElement.className = 'artist small ticker';
+            artistElement.innerHTML = artist.join('&nbsp;\u25CB&nbsp;');
+            textWrapper.appendChild(artistElement);
+        }
+
+        if (this.config.showMetadata) {
+            const volume = item.isMuted === true
+                ? this.getIcon('volume-x', 'dimmed')
+                : `${this.getIcon(item.volume < 50 ? 'volume-1' : 'volume-2', 'dimmed')}&nbsp;<span>${item.volume}</span>`;
+
+            const groupName = this.config.showFullGroupName
+                ? item.group.ZoneGroupMember.map(member => member.ZoneName).join(' + ')
+                : item.group.Name;
+
+            const parts = [
+                `<span>${this.getIcon('speaker', 'dimmed')}&nbsp;<span class="group-name ticker">${groupName}</span></span>`,
+                `<span>${volume}</span>`
+            ];
+            if (row.duration) {
+                parts.push(`<span>${this.getIcon('activity', 'dimmed')}&nbsp;<span>${row.duration}</span></span>`);
+            }
+
+            const metadata = document.createElement('div');
+            metadata.className = 'metadata small normal';
+            metadata.innerHTML = parts.join('&nbsp;');
+            textWrapper.appendChild(metadata);
+        }
+
+        wrapper.appendChild(textWrapper);
+        return wrapper;
     },
 
     getIcon: function (iconId, classes) {
